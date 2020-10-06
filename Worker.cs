@@ -3,31 +3,39 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.IO;
+using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace dotnet {
     public class Worker : IHostedService, IDisposable {
 			private readonly ILogger<Worker> _logger;
+			private readonly IConfiguration _config;
 			private Process ps = new Process();
 			private StreamWriter _log = null;
 
-			public Worker(ILogger<Worker> logger) {
+			public Worker(ILogger<Worker> logger, IConfiguration config) {
 					_logger = logger;
+          _config = config;
 			}
 
 			public Task StartAsync(CancellationToken stoppingToken) {
 					_logger.LogInformation("start.");
 
-					string cmd = "./stdouterr";
-        	_log = File.AppendText(cmd+".log");
+          string cmd = _config["Cmd"];
+          string args = _config["Args"];
+          string logfile = _config["Log"];
+        	_log = File.AppendText(logfile);
+					_logger.LogInformation("log: " + logfile);
 
           ps.StartInfo.UseShellExecute = false;
           ps.StartInfo.RedirectStandardError = true;  
           ps.StartInfo.RedirectStandardOutput = true;
 					ps.StartInfo.FileName = cmd;
+					ps.StartInfo.Arguments = args;
 
 					try {
 						if (!ps.Start()) {
