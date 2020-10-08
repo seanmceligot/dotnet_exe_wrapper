@@ -43,10 +43,21 @@ namespace dotnet {
 						}
 						_logger.LogInformation("started: " + ps);
 	 				} catch (Exception e) {
-                _logger.LogError(e.Message);
+             _logger.LogError(e.Message);
           }
-					ps.OutputDataReceived += (sender, e) => _log.WriteLine(e.Data);
-					ps.ErrorDataReceived += (sender, e) => _log.WriteLine(e.Data);
+					ps.OutputDataReceived += (sender, e) => {
+              if (e.Data != null) {
+                _logger.LogInformation(e.Data);
+               _log.WriteLine(e.Data);
+              }
+          };
+					ps.ErrorDataReceived += (sender, e) => {
+              if (e.Data != null) {
+                _logger.LogError(e.Data);
+               _log.WriteLine(e.Data);
+              }
+          };
+
 				
 					ps.BeginOutputReadLine();
 					ps.BeginErrorReadLine();
@@ -60,11 +71,13 @@ namespace dotnet {
 			}
 			public void Dispose() {
 					_logger.LogInformation("dispose.");
+          var killProcess = bool.Parse(_config["KillProcess"]);
+          if (killProcess) {
+            ps.Kill(true);
+          }
 					ps.Dispose();
 					_log.Close();
 					_log.Dispose();
 			}
-
-	
 	}
 }
